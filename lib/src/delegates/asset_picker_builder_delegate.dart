@@ -519,13 +519,8 @@ abstract class AssetPickerBuilderDelegate<Asset, Path> {
         bottom: context.bottomPadding,
       ),
       color: theme.primaryColor.withOpacity(isAppleOS ? 0.90 : 1),
-      child: Row(
-        children: <Widget>[
-          if (!isSingleAssetMode || !isAppleOS) previewButton(context),
-          if (isAppleOS) const Spacer(),
-          if (isAppleOS) confirmButton(context),
-        ],
-      ),
+      // Customize: confirm moved to bottom action bar
+      child: Center(child: confirmButton(context)),
     );
     if (isPermissionLimited) {
       child = Column(
@@ -910,23 +905,15 @@ class DefaultAssetPickerBuilderDelegate
   AssetPickerAppBar appBar(BuildContext context) {
     return AssetPickerAppBar(
       backgroundColor: theme.appBarTheme.backgroundColor,
-      centerTitle: isAppleOS,
+      // Customize: always center app bar title
+      centerTitle: true,
       title: Semantics(
         onTapHint: semanticsTextDelegate.sActionSwitchPathLabel,
         child: pathEntitySelector(context),
       ),
       leading: backButton(context),
-      // Condition for displaying the confirm button:
-      // - On Android, show if preview is enabled or if multi asset mode.
-      //   If no preview and single asset mode, do not show confirm button,
-      //   because any click on an asset selects it.
-      // - On iOS, show if no preview and multi asset mode. This is because for iOS
-      //   the [bottomActionBar] has the confirm button, but if no preview,
-      //   [bottomActionBar] is not displayed.
-      actions: (!isAppleOS || !isPreviewEnabled) &&
-              (isPreviewEnabled || !isSingleAssetMode)
-          ? <Widget>[confirmButton(context)]
-          : null,
+      // Customize: confirm button moved to bottom action bar
+      actions: null,
       actionsPadding: const EdgeInsetsDirectional.only(end: 14),
       blurRadius: isAppleOS ? appleOSBlurRadius : 0,
     );
@@ -949,8 +936,8 @@ class DefaultAssetPickerBuilderDelegate
                         child: Column(
                           children: <Widget>[
                             Expanded(child: assetsGridBuilder(context)),
-                            if (!isSingleAssetMode && isPreviewEnabled)
-                              bottomActionBar(context),
+                            // Customize: always show bottom action bar
+                            bottomActionBar(context),
                           ],
                         ),
                       ),
@@ -1342,9 +1329,23 @@ class DefaultAssetPickerBuilderDelegate
                     isPreviewEnabled && context.mediaQuery.accessibleNavigation
                         ? () => _pushAssetToViewer(context, index, asset)
                         : null,
+                // Copied from onTap in Semantics widget above, since it seem not to work
+                onTap: () => selectAsset(context, asset, isSelected),
                 child: IndexedSemantics(
                   index: semanticIndex(index),
-                  child: child,
+                  // Customize: add border to selected item
+                  child: AnimatedContainer(
+                    duration: switchingPathDuration * 0.75,
+                    decoration: BoxDecoration(
+                      border: Border.all(
+                        color: isSelected
+                            ? context.themeData.indicatorColor
+                            : Colors.transparent,
+                        width: 1,
+                      ),
+                    ),
+                    child: child,
+                  ),
                 ),
               ),
             );
@@ -1471,38 +1472,44 @@ class DefaultAssetPickerBuilderDelegate
   Widget confirmButton(BuildContext context) {
     return Consumer<DefaultAssetPickerProvider>(
       builder: (_, DefaultAssetPickerProvider p, __) {
-        return MaterialButton(
-          minWidth: p.isSelectedNotEmpty ? 48 : 20,
-          height: appBarItemHeight,
-          padding: const EdgeInsets.symmetric(horizontal: 12),
-          disabledColor: theme.dividerColor,
-          color: p.isSelectedNotEmpty ? themeColor : theme.dividerColor,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(3),
-          ),
-          child: ScaleText(
-            p.isSelectedNotEmpty && !isSingleAssetMode
-                ? '${textDelegate.confirm}'
-                    ' (${p.selectedAssets.length}/${p.maxAssets})'
-                : textDelegate.confirm,
-            style: TextStyle(
-              color: p.isSelectedNotEmpty
-                  ? theme.textTheme.bodyText1?.color
-                  : theme.textTheme.caption?.color,
-              fontSize: 17,
-              fontWeight: FontWeight.normal,
-            ),
-            semanticsLabel: p.isSelectedNotEmpty && !isSingleAssetMode
-                ? '${semanticsTextDelegate.confirm}'
-                    ' (${p.selectedAssets.length}/${p.maxAssets})'
-                : semanticsTextDelegate.confirm,
-          ),
-          onPressed: p.isSelectedNotEmpty
-              ? () => Navigator.of(context).maybePop(p.selectedAssets)
-              : null,
-          materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-        );
+        // Customize: refactor into method that can be overridden
+        return confirmButtonWidget(context, p);
       },
+    );
+  }
+
+  Widget confirmButtonWidget(
+      BuildContext context, DefaultAssetPickerProvider p) {
+    return MaterialButton(
+      minWidth: p.isSelectedNotEmpty ? 48 : 20,
+      height: appBarItemHeight,
+      padding: const EdgeInsets.symmetric(horizontal: 12),
+      disabledColor: theme.dividerColor,
+      color: p.isSelectedNotEmpty ? themeColor : theme.dividerColor,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(3),
+      ),
+      child: ScaleText(
+        p.isSelectedNotEmpty && !isSingleAssetMode
+            ? '${textDelegate.confirm}'
+                ' (${p.selectedAssets.length}/${p.maxAssets})'
+            : textDelegate.confirm,
+        style: TextStyle(
+          color: p.isSelectedNotEmpty
+              ? theme.textTheme.bodyText1?.color
+              : theme.textTheme.caption?.color,
+          fontSize: 17,
+          fontWeight: FontWeight.normal,
+        ),
+        semanticsLabel: p.isSelectedNotEmpty && !isSingleAssetMode
+            ? '${semanticsTextDelegate.confirm}'
+                ' (${p.selectedAssets.length}/${p.maxAssets})'
+            : semanticsTextDelegate.confirm,
+      ),
+      onPressed: p.isSelectedNotEmpty
+          ? () => Navigator.of(context).maybePop(p.selectedAssets)
+          : null,
+      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
     );
   }
 
@@ -1736,10 +1743,7 @@ class DefaultAssetPickerBuilderDelegate
             maxWidth: context.mediaQuery.size.width * 0.5,
           ),
           padding: const EdgeInsetsDirectional.only(start: 12, end: 6),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(999),
-            color: theme.dividerColor,
-          ),
+          // Customize: remove border
           child: Selector<DefaultAssetPickerProvider, AssetPathEntity?>(
             selector: (_, DefaultAssetPickerProvider p) => p.currentPath,
             builder: (_, AssetPathEntity? p, Widget? w) => Row(
@@ -1766,11 +1770,8 @@ class DefaultAssetPickerBuilderDelegate
             ),
             child: Padding(
               padding: const EdgeInsetsDirectional.only(start: 5),
-              child: DecoratedBox(
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: theme.iconTheme.color!.withOpacity(0.5),
-                ),
+              // Customize: remove background color
+              child: Container(
                 child: ValueListenableBuilder<bool>(
                   valueListenable: isSwitchingPath,
                   builder: (_, bool isSwitchingPath, Widget? w) {
@@ -1780,17 +1781,22 @@ class DefaultAssetPickerBuilderDelegate
                       child: w,
                     );
                   },
-                  child: Icon(
-                    Icons.keyboard_arrow_down,
-                    size: 20,
-                    color: theme.colorScheme.primary,
-                  ),
+                  // Customize: refactor into method that can be overridden
+                  child: pathEntitySelectorArrow(context),
                 ),
               ),
             ),
           ),
         ),
       ),
+    );
+  }
+
+  Widget pathEntitySelectorArrow(BuildContext context) {
+    return Icon(
+      Icons.keyboard_arrow_down,
+      size: 20,
+      color: theme.iconTheme.color,
     );
   }
 
@@ -2006,7 +2012,8 @@ class DefaultAssetPickerBuilderDelegate
 
   @override
   Widget selectIndicator(BuildContext context, int index, AssetEntity asset) {
-    final double indicatorSize = context.mediaQuery.size.width / gridCount / 3;
+    // Customize: fixed indicator size
+    const double indicatorSize = 24;
     final Duration duration = switchingPathDuration * 0.75;
     return Selector<DefaultAssetPickerProvider, String>(
       selector: (_, DefaultAssetPickerProvider p) => p.selectedDescriptions,
@@ -2014,25 +2021,21 @@ class DefaultAssetPickerBuilderDelegate
         final bool selected = descriptions.contains(asset.toString());
         final Widget innerSelector = AnimatedContainer(
           duration: duration,
-          width: indicatorSize / (isAppleOS ? 1.25 : 1.5),
-          height: indicatorSize / (isAppleOS ? 1.25 : 1.5),
-          padding: EdgeInsets.all(indicatorSize / 10),
+          width: indicatorSize,
+          height: indicatorSize,
           decoration: BoxDecoration(
-            border: !selected
-                ? Border.all(
-                    color: context.themeData.selectedRowColor,
-                    width: indicatorSize / 25,
-                  )
-                : null,
+            // Customize: remove border
+            border: null,
             color: selected ? themeColor : null,
             shape: BoxShape.circle,
           ),
-          child: FittedBox(
+          // Customize: remove box fitting
+          child: Center(
             child: AnimatedSwitcher(
               duration: duration,
               reverseDuration: duration,
-              child:
-                  selected ? const Icon(Icons.check) : const SizedBox.shrink(),
+              // Customize: refactor into method that can be overridden
+              child: selectIndicatorContent(context, asset, selected),
             ),
           ),
         );
@@ -2040,7 +2043,8 @@ class DefaultAssetPickerBuilderDelegate
           behavior: HitTestBehavior.opaque,
           onTap: () => selectAsset(context, asset, selected),
           child: Container(
-            margin: EdgeInsets.all(indicatorSize / 4),
+            // Customize: fixed margin
+            margin: const EdgeInsets.all(8),
             width: isPreviewEnabled ? indicatorSize : null,
             height: isPreviewEnabled ? indicatorSize : null,
             alignment: AlignmentDirectional.topEnd,
@@ -2059,6 +2063,14 @@ class DefaultAssetPickerBuilderDelegate
         return selectorWidget;
       },
     );
+  }
+
+  Widget selectIndicatorContent(
+    BuildContext context,
+    AssetEntity asset,
+    bool selected,
+  ) {
+    return selected ? const Icon(Icons.check) : const SizedBox.shrink();
   }
 
   @override
