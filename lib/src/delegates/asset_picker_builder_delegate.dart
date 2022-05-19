@@ -2193,15 +2193,18 @@ class DefaultAssetPickerBuilderDelegate
           value: provider,
           builder: (BuildContext context, _) => Material(
             color: theme.canvasColor,
-            child: Stack(
-              fit: StackFit.expand,
-              children: <Widget>[
-                if (isAppleOS)
-                  appleOSLayout(context)
-                else
-                  androidLayout(context),
-                if (Platform.isIOS) iOSPermissionOverlay(context),
-              ],
+            // Customize: wrapped with SafeArea
+            child: SafeArea(
+              child: Stack(
+                fit: StackFit.expand,
+                children: <Widget>[
+                  if (isAppleOS)
+                    appleOSLayout(context)
+                  else
+                    androidLayout(context),
+                  if (Platform.isIOS) iOSPermissionOverlay(context),
+                ],
+              ),
             ),
           ),
         ),
