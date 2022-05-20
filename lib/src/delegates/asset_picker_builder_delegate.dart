@@ -1602,7 +1602,7 @@ class DefaultAssetPickerBuilderDelegate
   @override
   Widget pathEntityListWidget(BuildContext context) {
     return Positioned.fill(
-      top: isAppleOS ? context.topPadding + kToolbarHeight : 0,
+      top: isAppleOS ? kToolbarHeight : 0,
       bottom: null,
       child: ValueListenableBuilder<bool>(
         valueListenable: isSwitchingPath,
