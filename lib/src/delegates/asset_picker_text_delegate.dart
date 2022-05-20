@@ -18,6 +18,7 @@ const List<AssetPickerTextDelegate> assetPickerTextDelegates =
   JapaneseAssetPickerTextDelegate(),
   ArabicAssetPickerTextDelegate(),
   FrenchAssetPickerTextDelegate(),
+  ThaiAssetPickerTextDelegate(),
 ];
 
 /// Obtain the text delegate from the given locale.
