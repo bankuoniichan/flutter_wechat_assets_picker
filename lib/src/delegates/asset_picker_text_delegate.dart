@@ -844,3 +844,21 @@ class FrenchAssetPickerTextDelegate extends AssetPickerTextDelegate {
   @override
   String get sUnitAssetCountLabel => 'quantité';
 }
+
+/// [AssetPickerTextDelegate] implements with Thai.
+/// Thai Localization (use English Localization as fallback)
+class ThaiAssetPickerTextDelegate extends EnglishAssetPickerTextDelegate {
+  const ThaiAssetPickerTextDelegate();
+
+  @override
+  String get languageCode => 'th';
+
+  @override
+  String get confirm => 'ตกลง';
+
+  @override
+  String get cancel => 'ยกเลิก';
+
+  @override
+  String get edit => 'แก้ไข';
+}
